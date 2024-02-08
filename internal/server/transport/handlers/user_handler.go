@@ -6,6 +6,7 @@ import (
 	"GoPass/internal/server/users"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -35,6 +36,7 @@ func (u *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	username := req.Login
 	password := req.Password
+	fmt.Println(username)
 
 	if username == "" || password == "" {
 		mw.LogError(w, r, server.ErrEmptyField)

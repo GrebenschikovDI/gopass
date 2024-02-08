@@ -4,6 +4,7 @@ import (
 	"GoPass/internal/server/records"
 	mw "GoPass/internal/server/transport/middleware"
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -18,6 +19,41 @@ func NewRecordHandler(recordUseCase records.UseCase) *RecordHandler {
 }
 
 func (rec *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "can't read request body", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+
+	var newRecord records.Record
+	if err := json.Unmarshal(body, &newRecord); err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "can't unmarshal request body", http.StatusBadRequest)
+		return
+	}
+
+	currentUserID, err := getCurrentUser(r)
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "Cant get user id", http.StatusUnauthorized)
+		return
+	}
+	newRecord.UserID = currentUserID
+	record, err := rec.OrderUseCase.Create(r.Context(), &newRecord)
+
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "error creating record", http.StatusInternalServerError)
+		return
+	}
+
+	// Отправка ответа с созданной записью
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(record)
 
 }
 

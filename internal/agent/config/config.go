@@ -31,7 +31,7 @@ func LoadConfig() (*ClientConfig, error) {
 func (c *ClientConfig) parseFlags() error {
 	server := flag.String("s", defaultServer, "server to connect")
 	ping := flag.String("p", defaultPing.String(), "check rate")
-	c.Server = fmt.Sprintf("http://%s/", *server)
+	c.Server = fmt.Sprintf("http://%s", *server)
 	duration, err := parseDuration(*ping, defaultPing)
 	if err != nil {
 		return err

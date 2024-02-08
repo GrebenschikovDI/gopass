@@ -33,6 +33,16 @@ func InitDB(_ context.Context, dsn, migrations string) (*PgStorage, error) {
 		UserRepo:   userRepo,
 		RecordRepo: recordRepo,
 	}
+
+	err = storage.runMigrations(dsn, migrations)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
 	return storage, nil
 }
 

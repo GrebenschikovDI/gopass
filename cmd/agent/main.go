@@ -3,6 +3,7 @@ package main
 import (
 	"GoPass/internal/agent/config"
 	"GoPass/internal/agent/controller"
+	"GoPass/internal/agent/records"
 	"GoPass/internal/agent/transport"
 	"bufio"
 	"context"
@@ -33,7 +34,7 @@ func main() {
 	fmt.Println("Greetings")
 	//проверка соединения с сервером
 	fmt.Println("Service available")
-	clearConsole(cfg.OS)
+	//clearConsole(cfg.OS)
 	startup(ctx, cfg)
 }
 
@@ -71,9 +72,10 @@ func login(ctx context.Context, cfg *config.ClientConfig) {
 	login = strings.TrimSpace(login)
 	fmt.Print("Enter password: ")
 	password, _ := terminal.ReadPassword(syscall.Stdin)
-	fmt.Println("\nPassword is", string(password))
-	cookie, _ := controller.Login(ctx, cfg, login, string(password))
-	//отправка данных на сервер и соединение
+	cookie, err := controller.Login(ctx, cfg, login, string(password))
+	if err != nil {
+		fmt.Printf("%e", err)
+	}
 	command(ctx, *cfg, cookie)
 }
 
@@ -104,7 +106,7 @@ func exit() {
 }
 
 func command(ctx context.Context, cfg config.ClientConfig, cookies []*http.Cookie) {
-	clearConsole("unix")
+	//clearConsole("unix")
 	//screen.MoveTopLeft()
 	fmt.Println("Welcome!")
 	for {
@@ -118,13 +120,39 @@ func command(ctx context.Context, cfg config.ClientConfig, cookies []*http.Cooki
 		switch command {
 		case "1":
 			// вывод  записи полностью
-			fmt.Println("List of commands")
+			fmt.Println("List of records")
 			text, err := transport.GetList(ctx, cfg, cookies)
 			if err != nil {
 				fmt.Printf("%e", err)
 			}
-			fmt.Println(text)
+			fmt.Println(string(text))
 		case "2":
+			record := records.Record{}
+			reader := bufio.NewReader(os.Stdin)
+
+			fmt.Print("Enter Name: ")
+			name, _ := reader.ReadString('\n')
+			record.Name = strings.TrimSpace(name)
+
+			fmt.Print("Enter Site: ")
+			site, _ := reader.ReadString('\n')
+			record.Site = strings.TrimSpace(site)
+
+			fmt.Print("Enter Login: ")
+			login, _ := reader.ReadString('\n')
+			record.Login = strings.TrimSpace(login)
+
+			fmt.Print("Enter Password: ")
+			password, _ := reader.ReadString('\n')
+			record.Password = strings.TrimSpace(password)
+
+			fmt.Print("Enter Info: ")
+			info, _ := reader.ReadString('\n')
+			record.Info = strings.TrimSpace(info)
+			err := transport.CreateRecord(ctx, cfg, record, cookies)
+			if err != nil {
+				fmt.Printf("%e", err)
+			}
 			// add new
 		case "3":
 		// edit

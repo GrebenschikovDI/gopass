@@ -9,15 +9,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"time"
 )
 
-const Dsn = "postgres://gopher:1234@localhost:5432/gopass"
+const Dsn = ""
 const migr = "migrations"
 const defaultRun = "localhost:8000"
 
 func main() {
-	log := logger.Initialize("info")
+	log := logger.Initialize("debug")
 	db, err := data.InitDB(context.Background(), Dsn, migr)
 	if err != nil {
 		log.WithField("error", err).Error("init DB failed")
@@ -25,17 +24,22 @@ func main() {
 	userUseCase := users.NewUseCase(db.UserRepo)
 	recordUseCase := records.NewUseCase(db.RecordRepo)
 
-	rc := records.Record{
-		UserID:    123,
-		Name:      "sdfsdf",
-		Site:      "sdfsdf",
-		Login:     "dsfsdf",
-		Password:  "dsfsdf",
-		Info:      "sdfsdf",
-		CreatedAt: time.Time{},
-	}
+	_, err = userUseCase.RegisterUser(context.Background(), "Lol", "password")
 
-	db.RecordRepo.Create(context.Background(), &rc)
+	//rc := records.Record{
+	//	Name:      "sdfsdf",
+	//	Site:      "sdfsdf",
+	//	Login:     "dsfsdf",
+	//	Password:  "dsfsdf",
+	//	Info:      "sdfsdf",
+	//	CreatedAt: time.Time{},
+	//}
+
+	//create, err := db.RecordRepo.Create(context.Background(), &rc)
+	//if err != nil {
+	//	fmt.Printf("%e", err)
+	//}
+	//fmt.Println(create)
 
 	s := &http.Server{
 		Addr:    defaultRun,
