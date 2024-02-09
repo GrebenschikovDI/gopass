@@ -4,8 +4,12 @@ import (
 	"GoPass/internal/server/records"
 	mw "GoPass/internal/server/transport/middleware"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type RecordHandler struct {
@@ -58,11 +62,66 @@ func (rec *RecordHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rec *RecordHandler) Update(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	currentUserID, err := getCurrentUser(r)
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "Cant get user id", http.StatusUnauthorized)
+		return
+	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "can't read request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
+	var ur records.Record
+	if err := json.Unmarshal(body, &ur); err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "can't unmarshal request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err = rec.OrderUseCase.Update(r.Context(), ur.ID, currentUserID, ur.Name, ur.Site, ur.Login, ur.Password, ur.Info)
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "error deleting record", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rec *RecordHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	currentUserID, err := getCurrentUser(r)
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "Cant get user id", http.StatusUnauthorized)
+		return
+	}
 
+	recordID := chi.URLParam(r, "id")
+	fmt.Println(recordID)
+	if recordID == "" {
+		http.Error(w, "Record ID is required", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(recordID)
+	if err != nil {
+		http.Error(w, "Invalid record ID", http.StatusBadRequest)
+		return
+	}
+
+	err = rec.OrderUseCase.Delete(r.Context(), id, currentUserID)
+	if err != nil {
+		mw.LogError(w, r, err)
+		http.Error(w, "error deleting record", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (rec *RecordHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -87,9 +146,3 @@ func (rec *RecordHandler) List(w http.ResponseWriter, r *http.Request) {
 func (rec *RecordHandler) GetById(w http.ResponseWriter, r *http.Request) {
 
 }
-
-//Create(ctx context.Context, record *Record) (*Record, error)
-//Update(ctx context.Context, id int, name, site, login, password, info string) (*Record, error)
-//Delete(ctx context.Context, id int) error
-//List(ctx context.Context, userID int) ([]*Record, error)
-//GetById(ctx context.Context, id int) (*Record, error)

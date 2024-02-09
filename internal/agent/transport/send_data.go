@@ -50,3 +50,37 @@ func CreateRecord(ctx context.Context, cfg config.ClientConfig, record records.R
 	// Все прошло успешно
 	return nil
 }
+
+func UpdateRecord(ctx context.Context, cfg config.ClientConfig, record records.Record, cookies []*http.Cookie) error {
+	server := cfg.Server
+	url := fmt.Sprintf("%s/api/records", server)
+
+	recordJSON, err := json.Marshal(record)
+	if err != nil {
+		return fmt.Errorf("failed to marshal record to JSON: %v", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, bytes.NewBuffer(recordJSON))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	for _, cookie := range cookies {
+		req.AddCookie(cookie)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("server returned non-204 status code: %d", resp.StatusCode)
+	}
+
+	return nil
+}

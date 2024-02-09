@@ -10,8 +10,16 @@ import (
 )
 
 func Login(ctx context.Context, cfg *config.ClientConfig, username, password string) ([]*http.Cookie, error) {
+	return authRequest(ctx, cfg, username, password, "login")
+}
+
+func Register(ctx context.Context, cfg *config.ClientConfig, username, password string) ([]*http.Cookie, error) {
+	return authRequest(ctx, cfg, username, password, "register")
+}
+
+func authRequest(ctx context.Context, cfg *config.ClientConfig, username, password, request string) ([]*http.Cookie, error) {
 	server := cfg.Server
-	u := fmt.Sprintf("%s/api/user/login", server)
+	u := fmt.Sprintf("%s/api/user/%s", server, request)
 
 	bodyData := map[string]string{
 		"login":    username,

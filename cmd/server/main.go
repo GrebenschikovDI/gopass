@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-const Dsn = ""
+const Dsn = "postgres://practicum:mega4el@localhost:5432/gopass"
 const migr = "migrations"
 const defaultRun = "localhost:8000"
 

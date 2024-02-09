@@ -44,11 +44,11 @@ func (r *recordRepo) Create(ctx context.Context, record *records.Record) (*recor
 	return record, nil
 }
 
-func (r *recordRepo) Update(ctx context.Context, id int, name, site, login, password, info string) (*records.Record, error) {
+func (r *recordRepo) Update(ctx context.Context, id, userID int, name, site, login, password, info string) (*records.Record, error) {
 	query := `
 		UPDATE records
 		SET name=$1, site=$2, login=$3, password_hash=$4, info=$5
-		WHERE id=$6
+		WHERE id=$6 AND user_id=$7
 	`
 
 	res, err := r.db.ExecContext(
@@ -60,6 +60,7 @@ func (r *recordRepo) Update(ctx context.Context, id int, name, site, login, pass
 		password,
 		info,
 		id,
+		userID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update record: %v", err)
@@ -76,13 +77,13 @@ func (r *recordRepo) Update(ctx context.Context, id int, name, site, login, pass
 	return r.GetById(ctx, id)
 }
 
-func (r *recordRepo) Delete(ctx context.Context, id int) error {
+func (r *recordRepo) Delete(ctx context.Context, id, userID int) error {
 	query := `
 		DELETE FROM records
-		WHERE id=$1
+		WHERE id=$1 AND user_id=$2
 	`
 
-	res, err := r.db.ExecContext(ctx, query, id)
+	res, err := r.db.ExecContext(ctx, query, id, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete record: %v", err)
 	}
@@ -136,7 +137,7 @@ func (r *recordRepo) GetById(ctx context.Context, id int) (*records.Record, erro
 	query := `
 		SELECT id, user_id, name, site, login, password_hash, info, created_at
 		FROM records
-		WHERE id=$1 AND user_id=$2
+		WHERE id=$1
 	`
 
 	var record records.Record

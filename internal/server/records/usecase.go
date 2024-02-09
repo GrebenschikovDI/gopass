@@ -24,16 +24,16 @@ func (u *UseCase) Create(ctx context.Context, record *Record) (*Record, error) {
 	return r, nil
 }
 
-func (u *UseCase) Update(ctx context.Context, id int, name, site, login, password, info string) (*Record, error) {
-	record, err := u.repo.Update(ctx, id, name, site, login, password, info)
+func (u *UseCase) Update(ctx context.Context, id, userID int, name, site, login, password, info string) (*Record, error) {
+	record, err := u.repo.Update(ctx, id, userID, name, site, login, password, info)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error updatng record, id: %d", id)
 	}
 	return record, nil
 }
 
-func (u *UseCase) Delete(ctx context.Context, id int) error {
-	err := u.repo.Delete(ctx, id)
+func (u *UseCase) Delete(ctx context.Context, id, userID int) error {
+	err := u.repo.Delete(ctx, id, userID)
 	if err != nil {
 		return errors.Wrapf(err, "error deleteing record, id: %d", id)
 	}

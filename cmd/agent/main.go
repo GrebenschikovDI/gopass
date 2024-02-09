@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -39,12 +40,6 @@ func main() {
 }
 
 func startup(ctx context.Context, cfg *config.ClientConfig) {
-	//запуск
-	fmt.Println("Greetings")
-	//проверка соединения с сервером
-	fmt.Println("Service available")
-	//запрос логина и пароля
-	//first frame
 	fmt.Println("Menu: 1 to login; 2 to register; 3 to exit")
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter a command: ")
@@ -54,18 +49,16 @@ func startup(ctx context.Context, cfg *config.ClientConfig) {
 	case "1":
 		login(ctx, cfg)
 	case "2":
-		register()
+		register(ctx, cfg)
 	case "3":
 		exit()
 	default:
 		fmt.Println("Unknown command")
 	}
-
-	//доступ к командам
-	//выполнение команд
 }
 
 func login(ctx context.Context, cfg *config.ClientConfig) {
+	fmt.Println("Login")
 	fmt.Print("Enter login: ")
 	reader := bufio.NewReader(os.Stdin)
 	login, _ := reader.ReadString('\n')
@@ -75,43 +68,39 @@ func login(ctx context.Context, cfg *config.ClientConfig) {
 	cookie, err := controller.Login(ctx, cfg, login, string(password))
 	if err != nil {
 		fmt.Printf("%e", err)
+		startup(ctx, cfg)
 	}
 	command(ctx, *cfg, cookie)
 }
 
-func register() {
+func register(ctx context.Context, cfg *config.ClientConfig) {
 	fmt.Print("Enter login: ")
 	reader := bufio.NewReader(os.Stdin)
 	login, _ := reader.ReadString('\n')
 	login = strings.TrimSpace(login)
-	// проверить логин
 	fmt.Print("Enter password: ")
 	password, _ := terminal.ReadPassword(syscall.Stdin)
-	// проверить пароль
-	fmt.Println("\nPassword is", string(password))
-	//отправка данных на сервер и соединение
-	//command()
+	cookie, err := controller.Register(ctx, cfg, login, string(password))
+	if err != nil {
+		fmt.Printf("%e", err)
+		startup(ctx, cfg)
+	}
+	command(ctx, *cfg, cookie)
 }
 
-func logout() {
-	// закрытие соединения
-	// выход на первый фрейм
-	//startup()
-
+func logout(ctx context.Context, cfg *config.ClientConfig) {
+	startup(ctx, cfg)
 }
 
 func exit() {
-	// доабавить graceful shutdown?
 	os.Exit(0)
 }
 
 func command(ctx context.Context, cfg config.ClientConfig, cookies []*http.Cookie) {
-	//clearConsole("unix")
-	//screen.MoveTopLeft()
 	fmt.Println("Welcome!")
-	for {
-		fmt.Println("Menu: 1 to open; 2 to create ; 3 to edit; 4 logout;")
-		// вывод имен записей
+	run := true
+	for run {
+		fmt.Println("Menu: 1 to open; 2 to create ; 3 to edit; 4 to delete; 5 to exit;")
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Enter a command: ")
 		command, _ := reader.ReadString('\n')
@@ -153,11 +142,58 @@ func command(ctx context.Context, cfg config.ClientConfig, cookies []*http.Cooki
 			if err != nil {
 				fmt.Printf("%e", err)
 			}
-			// add new
 		case "3":
-		// edit
+			record := records.Record{}
+			reader := bufio.NewReader(os.Stdin)
+
+			fmt.Print("Enter ID of a record: ")
+			idStr, _ := reader.ReadString('\n')
+			id, err := strconv.Atoi(strings.TrimSpace(idStr))
+			if err != nil {
+				fmt.Println("Invalid ID format:", err)
+				return
+			}
+			record.ID = id
+
+			fmt.Print("Enter Name: ")
+			name, _ := reader.ReadString('\n')
+			record.Name = strings.TrimSpace(name)
+
+			fmt.Print("Enter Site: ")
+			site, _ := reader.ReadString('\n')
+			record.Site = strings.TrimSpace(site)
+
+			fmt.Print("Enter Login: ")
+			login, _ := reader.ReadString('\n')
+			record.Login = strings.TrimSpace(login)
+
+			fmt.Print("Enter Password: ")
+			password, _ := reader.ReadString('\n')
+			record.Password = strings.TrimSpace(password)
+
+			fmt.Print("Enter Info: ")
+			info, _ := reader.ReadString('\n')
+			record.Info = strings.TrimSpace(info)
+			err = transport.UpdateRecord(ctx, cfg, record, cookies)
+			if err != nil {
+				fmt.Printf("%e", err)
+			}
 		case "4":
-			logout()
+			reader := bufio.NewReader(os.Stdin)
+			fmt.Print("Enter ID: ")
+			idStr, _ := reader.ReadString('\n')
+			id, err := strconv.Atoi(strings.TrimSpace(idStr))
+			if err != nil {
+				fmt.Println("Invalid ID format:", err)
+				return
+			}
+			err = transport.DeleteRecord(ctx, &cfg, cookies, id)
+			if err != nil {
+				fmt.Printf("%e", err)
+			}
+		case "5":
+			run = false
+			logout(ctx, &cfg)
 		default:
 			fmt.Println("Unknown command")
 		}

@@ -23,11 +23,11 @@ func ServerRouter(
 	r.Group(func(r chi.Router) {
 		r.Use(mw.AuthMiddleware)
 		orderHandler := handlers.NewRecordHandler(recordUseCase)
-		r.Get("/api/records/id", orderHandler.GetById)
+		r.Get("/api/records/{id}", orderHandler.GetById)
 		r.Get("/api/records", orderHandler.List)
 		r.Post("/api/records", orderHandler.Create)
 		r.Patch("/api/records", orderHandler.Update)
-		r.Delete("/api/records", orderHandler.Delete)
+		r.Delete("/api/records/{id}", orderHandler.Delete)
 	})
 
 	userHandler := handlers.NewUserHandler(userUseCase)
